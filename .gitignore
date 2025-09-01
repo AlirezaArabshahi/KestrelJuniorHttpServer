@@ -53,10 +53,10 @@ CodeCoverage/
 TestResult.xml
 nunit-*.xml
 
-# Rider
-.idea
-
 # macOS specific files
 **/.DS_Store
 
+# JetBrains Rider/ReSharper
+*.DotSettings.user
+.idea
 
