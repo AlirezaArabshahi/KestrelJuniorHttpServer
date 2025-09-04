@@ -62,7 +62,7 @@ This roadmap tracks the evolution of the Http Server from a simple socket listen
 *Goal: Establish a basic server that can accept connections, understand raw HTTP requests, and pass them to a consumer queue.*
 
 
--   [x] **TCP Listener Setup**
+-   [] **TCP Listener Setup**
     *   **Task:** Listen on a configured IP and port.
     *   **Approach (The "Why"):** Uses .NET's standard `TcpListener` class for its simplicity and reliability in binding to a network endpoint.
     *   **Limitation:** The configuration (IP/Port) is currently hardcoded, making it inflexible for different environments and requiring a recompile to change.
@@ -79,14 +79,14 @@ This roadmap tracks the evolution of the Http Server from a simple socket listen
     *   **Tag:** `v1.1-async-loop`
 
 
--   [x] **Request Line Parsing**
+-   [] **Request Line Parsing**
     *   **Approach (The "Why"):** To understand the protocol deeply, we start with manual, byte-level parsing to see how raw HTTP works.
     *   **Limitation:** This low-level approach is brittle and can fail in real-world network conditions due to **data fragmentation**.
     *   **Future Improvement:** In **Phase 3 (Tag: `v3.3`)**, we will refactor this to use `StreamReader` for a more robust solution.
     *   **Tag:** `v1.2-request-line-parsing`
 
 
--   [x] **Header Parsing**
+-   [] **Header Parsing**
     *   **Approach (The "Why"):** Accumulate raw bytes into a `MemoryStream`, then convert the entire block to a string for parsing.
     *   **Limitation:** This is a performance anti-pattern. Calling `ms.ToArray()` creates a **full copy** of the buffer, leading to unnecessary memory allocations.
     *   **Future Improvement:** We will refactor to use `StreamReader` in **Phase 3** and ultimately `System.IO.Pipelines` in **Phase 4 (Tag: `v4.5`)** for high-performance parsing.
