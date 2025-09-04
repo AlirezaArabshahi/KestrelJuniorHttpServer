@@ -2,7 +2,7 @@
 > What *really* happens when a web request hits your server? Let's find out.
 
 ### What is this?
-**Kestrel Jr** is a simple, educational HTTP/1.1 web server built from the ground up in modern C# (.NET). Instead of using high-level abstractions, its core philosophy is to start with the `System.Net.Sockets.TcpListener` to demystify the magic behind production web servers like the real Kestrel.
+**Kestrel Junior** is a simple, educational HTTP/1.1 web server built from the ground up in modern C# (.NET). Instead of using high-level abstractions, its core philosophy is to start with the `System.Net.Sockets.TcpListener` to demystify the magic behind production web servers like the real Kestrel.
 
 This project is **not** a production-ready server. It's a "glass box" designed for learning, allowing you to see and understand every step of handling an HTTP request: from the raw TCP connection to parsing byte-by-byte and sending a response back.
 
@@ -62,7 +62,7 @@ This roadmap tracks the evolution of the Http Server from a simple socket listen
 *Goal: Establish a basic server that can accept connections, understand raw HTTP requests, and pass them to a consumer queue.*
 
 
--   [] **TCP Listener Setup**
+-   [ ] **TCP Listener Setup**
     *   **Task:** Listen on a configured IP and port.
     *   **Approach (The "Why"):** Uses .NET's standard `TcpListener` class for its simplicity and reliability in binding to a network endpoint.
     *   **Limitation:** The configuration (IP/Port) is currently hardcoded, making it inflexible for different environments and requiring a recompile to change.
@@ -72,21 +72,21 @@ This roadmap tracks the evolution of the Http Server from a simple socket listen
     *   **Tag:** `v1.0-listener-setup`
 
 
--   [x] **Asynchronous Connection Loop**
+-   [ ] **Asynchronous Connection Loop**
     *   **Task:** Create a non-blocking loop to accept multiple clients, utilizing `CancellationToken` for graceful shutdown.
     *   **Approach (The "Why"):** An `async while` loop with `AcceptTcpClientAsync` prevents the main thread from blocking while waiting for connections.
     *   **Limitation:** Without robust error handling for the acceptance logic itself, an exception here could terminate the server's ability to accept new clients.
     *   **Tag:** `v1.1-async-loop`
 
 
--   [] **Request Line Parsing**
+-   [ ] **Request Line Parsing**
     *   **Approach (The "Why"):** To understand the protocol deeply, we start with manual, byte-level parsing to see how raw HTTP works.
     *   **Limitation:** This low-level approach is brittle and can fail in real-world network conditions due to **data fragmentation**.
     *   **Future Improvement:** In **Phase 3 (Tag: `v3.3`)**, we will refactor this to use `StreamReader` for a more robust solution.
     *   **Tag:** `v1.2-request-line-parsing`
 
 
--   [] **Header Parsing**
+-   [ ] **Header Parsing**
     *   **Approach (The "Why"):** Accumulate raw bytes into a `MemoryStream`, then convert the entire block to a string for parsing.
     *   **Limitation:** This is a performance anti-pattern. Calling `ms.ToArray()` creates a **full copy** of the buffer, leading to unnecessary memory allocations.
     *   **Future Improvement:** We will refactor to use `StreamReader` in **Phase 3** and ultimately `System.IO.Pipelines` in **Phase 4 (Tag: `v4.5`)** for high-performance parsing.
