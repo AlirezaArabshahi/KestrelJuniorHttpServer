@@ -1,4 +1,4 @@
-# Kestrel Junior Http Server.
+# Kestrel Junior Http Server | A Learning-Focused Repository
 > What *really* happens when a web request hits your server? Let's find out.
 
 ### What is this?
@@ -9,21 +9,19 @@ This project is **not** a production-ready server. It's a "glass box" designed f
 ### Found this useful? Give it a star ⭐️
 If you've found this project helpful for learning about web servers, please consider giving it a star on GitHub! It helps others discover the repository and motivates further development.
 
-### A Learning-Focused Repository
+### Project Structure: Understanding the Codebase, Branches & Tags
 *   The source code is filled with comments explaining the "why" behind the implementation. For example:
     ```
     // At this point, MemoryStream contains the raw bytes read from the network stream so far.
     // For example, if the request was "GET / HTTP/1.1\r\nHost: localhost:8080\r\n\r\n",
     // MemoryStream would internally hold the byte sequence corresponding to this string.
     // In hexadecimal representation, these bytes would look like:
-    // 47 45 54 20 2F 20 48 54 54 50 2F 31 2E
+    // 47 45 54 20 2F 20 48 54 54 50 2F 31 2E ...
     ```
 *   To see the code at the end of each completed step, simply check out its corresponding Git tag. For example:
     ```
     git checkout v1.0-basic-listener
     ```
-
-### Project Structure: Branches & Tags
 The `main` branch always contains the latest, most complete version of the project.
 
 **Branches:**
