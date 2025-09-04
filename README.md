@@ -1,13 +1,18 @@
-# Kestrel Junior Http Server | A Learning-Focused Repository
+# Kestrel Junior Http Server
 > What *really* happens when a web request hits your server? Let's find out.
 
 ### What is this?
-**Kestrel Junior** is a simple, educational HTTP/1.1 web server built from the ground up in modern C# (.NET). Instead of using high-level abstractions, its core philosophy is to start with the `System.Net.Sockets.TcpListener` to demystify the magic behind production web servers like the real Kestrel.
+**Kestrel Junior** is a simple, educational HTTP/1.1 web server built from the ground up in modern C# (.NET). Instead of using high-level abstractions, its core philosophy is to start with the `System.Net.Sockets.TcpListener` to demystify the magic behind production web servers like the real AspNetCore Kestrel. 
 
-This project is **not** a production-ready server. It's a "glass box" designed for learning, allowing you to see and understand every step of handling an HTTP request: from the raw TCP connection to parsing byte-by-byte and sending a response back.
+**Key Features:**
+*   **Educational Focus:** The project is designed for learning purposes. Every step of the server's operation is explained in detail through comments, making it an ideal resource for understanding how web servers work.
+*   **Step-by-Step Development:** The code is incrementally developed, with each tag representing a new feature or improvement. This allows you to follow the evolution of the server and see how it grows over time.
+*   **Modular Design:** The project is structured into distinct phases, each with its own set of features and improvements.
 
 ### Found this useful? Give it a star ⭐️
 If you've found this project helpful for learning about web servers, please consider giving it a star on GitHub! It helps others discover the repository and motivates further development.
+
+**Note:** This project is **not** a production-ready server. It's for learning, allowing you to see and understand the behind-the-scenes of how a web server works.
 
 ### Project Structure: Understanding the Codebase, Branches & Tags
 *   The source code is filled with comments explaining the "why" behind the implementation. For example:
@@ -31,7 +36,7 @@ The `main` branch always contains the latest, most complete version of the proje
 -   `phase/3-stability-security`   
 -   `phase/4-advanced-features` 
 
-**Tags Overview (Planned):**
+**Tags:**
 -   `v1.0-basic-listener`
 -   `v1.1-async-loop`
 -   `v1.2-request-line-parsing`
