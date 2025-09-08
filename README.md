@@ -25,7 +25,7 @@ If you've found this project helpful for learning about web servers, please cons
     ```
 *   To see the code at the end of each completed step, simply check out its corresponding Git tag. For example:
     ```
-    git checkout v1.0-basic-listener
+    git checkout basic-listener
     ```
 The `main` branch always contains the latest, most complete version of the project.
 
@@ -37,27 +37,27 @@ The `main` branch always contains the latest, most complete version of the proje
 -   `phase/4-advanced-features` 
 
 **Tags:**
--   `v1.0-basic-listener`
--   `v1.1-async-loop`
--   `v1.2-request-line-parsing`
--   `v1.3-header-parsing`
--   `v1.4-body-reading`
--   `v1.5-request-queue`
--   `v2.0-response-class`
--   `v2.1-response-buffering`
--   `v2.2-status-codes`
--   `v3.0-error-handling`
--   `v3.1-resource-management`
--   `v3.2-keep-alive`
--   `v3.3-streamreader-refactor`
--   `v3.4-request-size-limits`
--   `v3.5-request-timeouts`
--   `v4.0-query-string-parsing`
--   `v4.1-cookie-parsing`
--   `v4.2-chunked-encoding`
--   `v4.3-https-tls`
--   `v4.4-multi-address`
--   `v4.5-pipelines-integration`
+-   `basic-listener`
+-   `async-loop`
+-   `request-line-parsing`
+-   `header-parsing`
+-   `body-reading`
+-   `request-queue`
+-   `response-class`
+-   `response-buffering`
+-   `status-codes`
+-   `error-handling`
+-   `resource-management`
+-   `keep-alive`
+-   `streamreader-refactor`
+-   `request-size-limits`
+-   `request-timeouts`
+-   `query-string-parsing`
+-   `cookie-parsing`
+-   `chunked-encoding`
+-   `https-tls`
+-   `multi-address`
+-   `pipelines-integration`
 ---
 ## Development Roadmap
 This roadmap tracks the evolution of the Http Server from a simple socket listener to a more compliant and robust HTTP server.
@@ -71,42 +71,42 @@ This roadmap tracks the evolution of the Http Server from a simple socket listen
     *   **Limitation:** The configuration (IP/Port) is currently hardcoded, making it inflexible for different environments and requiring a recompile to change.
 
 
-    *   **Future Improvement:** In **Phase 4 (Tag: `v4.4`)**, we will externalize this into a configuration file. This allows changing addresses without recompiling and is the foundation for supporting multiple listeners. 
-    *   **Tag:** `v1.0-listener-setup`
+    *   **Future Improvement:** In **Phase 4 (Tag: `multi-address`)**, we will externalize this into a configuration file. This allows changing addresses without recompiling and is the foundation for supporting multiple listeners. 
+    *   **Tag:** `listener-setup`
 
 
 -   [ ] **Asynchronous Connection Loop**
     *   **Task:** Create a non-blocking loop to accept multiple clients, utilizing `CancellationToken` for graceful shutdown.
     *   **Approach (The "Why"):** An `async while` loop with `AcceptTcpClientAsync` prevents the main thread from blocking while waiting for connections.
     *   **Limitation:** Without robust error handling for the acceptance logic itself, an exception here could terminate the server's ability to accept new clients.
-    *   **Tag:** `v1.1-async-loop`
+    *   **Tag:** `async-loop`
 
 
 -   [ ] **Request Line Parsing**
     *   **Approach (The "Why"):** To understand the protocol deeply, we start with manual, byte-level parsing to see how raw HTTP works.
     *   **Limitation:** This low-level approach is brittle and can fail in real-world network conditions due to **data fragmentation**.
-    *   **Future Improvement:** In **Phase 3 (Tag: `v3.3`)**, we will refactor this to use `StreamReader` for a more robust solution.
-    *   **Tag:** `v1.2-request-line-parsing`
+    *   **Future Improvement:** In **Phase 3 (Tag: `streamreader-refactor`)**, we will refactor this to use `StreamReader` for a more robust solution.
+    *   **Tag:** `request-line-parsing`
 
 
 -   [ ] **Header Parsing**
     *   **Approach (The "Why"):** Accumulate raw bytes into a `MemoryStream`, then convert the entire block to a string for parsing.
     *   **Limitation:** This is a performance anti-pattern. Calling `ms.ToArray()` creates a **full copy** of the buffer, leading to unnecessary memory allocations.
-    *   **Future Improvement:** We will refactor to use `StreamReader` in **Phase 3** and ultimately `System.IO.Pipelines` in **Phase 4 (Tag: `v4.5`)** for high-performance parsing.
-    *   **Tag:** `v1.3-header-parsing`
+    *   **Future Improvement:** We will refactor to use `StreamReader` in **Phase 3 (Tag: `streamreader-refactor`)** and ultimately `System.IO.Pipelines` in **Phase 4 (Tag: `pipelines-integration`)** for high-performance parsing.
+    *   **Tag:** `header-parsing`
 
 
 -   [ ] **Request Body Reading**
     *   **Approach (The "Why"):** Learn how to read the request payload based on the `Content-Length` header.
     *   **Limitation:** Reading the entire body into memory is highly inefficient for large file uploads and consumes significant RAM.
-    *   **Future Improvement:** Explore streaming reads and `Chunked Transfer Encoding` in Phase 4 (Tag: `v4.2`)
-    *   **Tag:** `v1.4-body-reading`
+    *   **Future Improvement:** Explore streaming reads and `Chunked Transfer Encoding` in Phase 4 (Tag: `chunked-encoding`)
+    *   **Tag:** `body-reading`
 
 
 -   [ ] **Request Queue (`Channel<T>`)**
     *   **Approach (The "Why"):** Decouple the I/O layer from the processing layer to prevent blocking and improve concurrency.
     *   **Limitation (The Problem it Solves):** Without a queue, each new connection must wait for the previous one to be fully processed, severely limiting concurrency. `Channel<T>` provides a high-performance, thread-safe queue to solve this.
-    *   **Tag:** `v1.5-request-queue`
+    *   **Tag:** `request-queue`
 
 
 ### 🟡 Phase 2: Response Generation & Basic Compliance
@@ -115,55 +115,65 @@ This roadmap tracks the evolution of the Http Server from a simple socket listen
 
 -   [ ] **Basic Response Class**
     *   **Task:** Create classes to represent and build an HTTP response.
-    *   **Tag:** `v2.0-response-class`
+    *   **Tag:** `response-class`
 
 
 -   [ ] **Buffer-Based Response Body**
     *   **Approach (The "Why"):** Construct the response payload in a `MemoryStream` before sending.
     *   **Limitation:** Inefficient for large responses (like files) and can delay the Time to First Byte (TTFB).
     *   **Future Improvement:** Move towards streaming responses.
-    *   **Tag:** `v2.1-response-buffering`
+    *   **Tag:** `response-buffering`
 
 
 -   [ ] **Correct Status & Reason Phrases**
     *   **Task:** Implement a mechanism to map status codes (e.g., 404) to their official reason phrases (e.g., "Not Found").
-    *   **Tag:** `v2.2-status-codes`
-
+    *   **Tag:** `status-codes`
 
 ### ⏳ Phase 3: Stability, Security & Performance
-*Goal: Make the server more robust, secure, and implement key HTTP/1.1 performance optimizations.*
+*Goal: Refactor the project's structure into a clean, layered architecture, then implement key features to make the server more stable, secure, and performant.*
+
+-   [ ] **Architectural Refactoring: Implement a Layered Architecture**
+    *   **Task:** Restructure the entire project, drawing inspiration from Kestrel's architecture, to achieve a clear separation of concerns.
+    *   **Approach (The "Why"):** The current design, which places most logic in one or two large classes, was suitable for Phase 1 but is too brittle for future development. By refactoring into distinct layers, we improve testability, extensibility, and maintainability.
+    *   **Layers:**
+        - Core Layer (Core/): The public entry point for the server (KestrelJuniorServer, KestrelJuniorServerOptions)
+        - Transport Layer (Transport/): Responsible for low-level network management (SocketTransport)
+        - HTTP Layer (Http/): Responsible for parsing and processing the HTTP protocol (HttpParser, HttpContext)
+        - Logging Layer (Logging/): Provides structured logging capabilities across all layers
+    *   **Advantage:** This refactoring is a fundamental prerequisite for correctly implementing all other tasks in Phase 3 and 4 (such as Keep-Alive and HTTPS).
+    *   **Tag:** `architectural-refactor`
 
 
 -   [ ] **Robust Error Handling**
     *   **Task:** Wrap request processing and the main listener loop to catch errors, log them, and prevent the server from crashing.
-    *   **Tag:** `v3.0-error-handling`
+    *   **Tag:** `error-handling`
 
 
 -   [ ] **Proper Resource Management (`IDisposable`)**
     *   **Task:** Use `IDisposable` to guarantee sockets and streams are always closed, preventing resource leaks.
-    *   **Tag:** `v3.1-resource-management`
+    *   **Tag:** `resource-management`
 
 
 -   [ ] **Persistent Connections (HTTP Keep-Alive)**
     *   **Approach (The "Why"):** Implement this critical HTTP/1.1 optimization to avoid the expensive TCP handshake for subsequent requests from the same client.
     *   **Limitation (Without It):** Closing the connection after each response severely degrades performance.
-    *   **Tag:** `v3.2-keep-alive`
+    *   **Tag:** `keep-alive`
 
 
 -   [ ] **Introduce `StreamReader` for Request Parsing**
     *   **Task:** Refactor the manual parsing from Phase 1 to use `StreamReader`.
     *   **Approach (The "Why"):** `StreamReader` provides a robust abstraction that handles buffering and data fragmentation internally.
-    *   **Tag:** `v3.3-streamreader-refactor`
+    *   **Tag:** `streamreader-refactor`
 
 
 -   [ ] **Request Size Limits**
     *   **Task:** Enforce limits on header and body size to prevent memory-exhaustion Denial-of-Service attacks. This is a core server protection mechanism.
-    *   **Tag:** `v3.4-request-size-limits`
+    *   **Tag:** `request-size-limits`
 
 
 -   [ ] **Request Timeouts**
     *   **Task:** Close connections that are idle or sending data too slowly to prevent resource exhaustion from attacks like Slowloris.
-    *   **Tag:** `v3.5-request-timeouts`
+    *   **Tag:** `request-timeouts`
 
 
 ### 🚀 Phase 4: Advanced Server Features & Performance Deep Dive
@@ -172,29 +182,29 @@ This roadmap tracks the evolution of the Http Server from a simple socket listen
 
 -   [ ] **Query String Parsing**
     *   **Task:** Parse the URL's query string (e.g., `/users?id=123`) into a dictionary.
-    *   **Tag:** `v4.0-query-string-parsing`
+    *   **Tag:** `query-string-parsing`
 
 -   [ ] **Cookie Parsing**
     *   **Task:** Parse the `Cookie` request header into a structured collection. The server is responsible for parsing protocol elements; the framework is responsible for *using* them.
-    *   **Tag:** `v4.1-cookie-parsing`
+    *   **Tag:** `cookie-parsing`
 
 -   [ ] **(Ambitious) Chunked Transfer Encoding**
     *   **Task:** Support reading/sending data in chunks when the content length is unknown.
-    *   **Tag:** `v4.2-chunked-encoding`
+    *   **Tag:** `chunked-encoding`
 
 
 -   [ ] **(Ambitious) Basic HTTPS/TLS Support**
     *   **Task:** Explore using `SslStream` to handle encrypted `https://` connections.
-    *   **Tag:** `v4.3-https-tls`
+    *   **Tag:** `https-tls`
 
 
 -   [ ] **(Ambitious) Multiple Listening Addresses**
     *   **Task:** Support listening on multiple IP addresses and ports simultaneously, similar to production web servers.
-    *   **Tag:** `v4.4-multi-address`
+    *   **Tag:** `multi-address`
 
 
 
 -   [ ] **(Ambitious) Full `System.IO.Pipelines` Integration**
     *   **Approach (The "Why"):** To achieve peak I/O performance. `Pipelines` is a sophisticated API that minimizes data copies ("zero-copy" parsing) and reduces memory allocations.
     *   **Limitation (of Previous Methods):** `StreamReader` and manual `byte[]` are not ideal for max performance due to buffer copying and GC pressure.
-    *   **Tag:** `v4.5-pipelines-integration`
+    *   **Tag:** `pipelines-integration`
