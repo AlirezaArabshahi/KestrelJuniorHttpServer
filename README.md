@@ -88,7 +88,7 @@ This roadmap tracks the evolution of the Http Server from a simple socket listen
     *   **Tag:** `request-line-parsing`
 
 
--   [ ] **Header Parsing**
+-   [x] **Header Parsing**
     *   **Approach (The "Why"):** Accumulate raw bytes into a `MemoryStream`, then convert the entire block to a string for parsing.
     *   **Limitation:** This is a performance anti-pattern. Calling `ms.ToArray()` creates a **full copy** of the buffer, leading to unnecessary memory allocations.
     *   **Future Improvement:** We will refactor to use `StreamReader` in **Phase 3 (Tag: `streamreader-refactor`)** and ultimately `System.IO.Pipelines` in **Phase 4 (Tag: `pipelines-integration`)** for high-performance parsing.
