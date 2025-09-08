@@ -65,12 +65,10 @@ This roadmap tracks the evolution of the Http Server from a simple socket listen
 *Goal: Establish a basic server that can accept connections, understand raw HTTP requests, and pass them to a consumer queue.*
 
 
--   [ ] **TCP Listener Setup**
+-   [x] **TCP Listener Setup**
     *   **Task:** Listen on a configured IP and port.
     *   **Approach (The "Why"):** Uses .NET's standard `TcpListener` class for its simplicity and reliability in binding to a network endpoint.
     *   **Limitation:** The configuration (IP/Port) is currently hardcoded, making it inflexible for different environments and requiring a recompile to change.
-
-
     *   **Future Improvement:** In **Phase 4 (Tag: `multi-address`)**, we will externalize this into a configuration file. This allows changing addresses without recompiling and is the foundation for supporting multiple listeners. 
     *   **Tag:** `listener-setup`
 
