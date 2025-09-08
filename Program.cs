@@ -4,5 +4,5 @@ var server = new HttpListener("http://localhost:11231");
 server.Start();
 Console.WriteLine("Press any key to stop the server.");
 Console.ReadKey();
-server.Stop();
+await server.StopAsync();
 Console.WriteLine("Server stopped.");

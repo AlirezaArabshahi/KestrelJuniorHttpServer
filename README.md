@@ -73,10 +73,11 @@ This roadmap tracks the evolution of the Http Server from a simple socket listen
     *   **Tag:** `listener-setup`
 
 
--   [ ] **Asynchronous Connection Loop**
+-   [x] **Asynchronous Connection Loop**
     *   **Task:** Create a non-blocking loop to accept multiple clients, utilizing `CancellationToken` for graceful shutdown.
     *   **Approach (The "Why"):** An `async while` loop with `AcceptTcpClientAsync` prevents the main thread from blocking while waiting for connections.
     *   **Limitation:** Without robust error handling for the acceptance logic itself, an exception here could terminate the server's ability to accept new clients.
+    *   **Future Improvement:** In **Phase 3 (Tag: `error-handling`)**, we will add try-catch blocks to handle exceptions gracefully.
     *   **Tag:** `async-loop`
 
 
