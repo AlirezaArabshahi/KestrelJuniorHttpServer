@@ -1,7 +1,8 @@
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 
-namespace KestrelJrHttpListener.Core;
+namespace KestrelJuniorHttpServer.Core;
 
 public class HttpListener
 {
@@ -32,18 +33,39 @@ public class HttpListener
         _acceptLoop = AcceptClientsAsync(_cts.Token);
     }
 
-    private async Task AcceptClientsAsync(CancellationToken token)
+    private async Task AcceptClientsAsync(CancellationToken ct)
     {
         if (_tcpListener == null) return;
         
-        while (!token.IsCancellationRequested)
+        while (!ct.IsCancellationRequested)
         {
-            var client = await _tcpListener.AcceptTcpClientAsync(token);
-            // Handle client connection here (e.g., in a new Task)
-            // Temporarily close the connection as request handling is not yet implemented
-            // This prevents the client from hanging indefinitely
+            var client = await _tcpListener.AcceptTcpClientAsync(ct);
+            _ = HandleClientAsync(client, ct); // Handle client connection in a new Task
+        }
+    }
+
+    private async Task HandleClientAsync(TcpClient client, CancellationToken ct)
+    {
+        Console.WriteLine("Client connected!");
+        try
+        {
+            using var stream = client.GetStream();
+            var buffer = new byte[1024];
+            var bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, ct);
+            var request = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+            var requestLine = request.Split('\n')[0].Trim();
+            if (!string.IsNullOrEmpty(requestLine))
+            {
+                var (method, path, httpVersion) = HttpRequestParser.ParseRequestLine(requestLine);
+                Console.WriteLine($"Method: {method}, Path: {path}, HTTP Version: {httpVersion}");
+            }
+
+            // For now, just close the connection
             client.Close();
-            Console.WriteLine("Client connected!");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Error handling client: {e.Message}");
         }
     }
 

@@ -81,7 +81,7 @@ This roadmap tracks the evolution of the Http Server from a simple socket listen
     *   **Tag:** `async-loop`
 
 
--   [ ] **Request Line Parsing**
+-   [x] **Request Line Parsing**
     *   **Approach (The "Why"):** To understand the protocol deeply, we start with manual, byte-level parsing to see how raw HTTP works.
     *   **Limitation:** This low-level approach is brittle and can fail in real-world network conditions due to **data fragmentation**.
     *   **Future Improvement:** In **Phase 3 (Tag: `streamreader-refactor`)**, we will refactor this to use `StreamReader` for a more robust solution.

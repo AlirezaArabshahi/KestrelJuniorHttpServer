@@ -1,4 +1,4 @@
-﻿using KestrelJrHttpListener.Core;
+﻿using KestrelJuniorHttpServer.Core;
 
 var server = new HttpListener("http://localhost:11231");
 server.Start();
