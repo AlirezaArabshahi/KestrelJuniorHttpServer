@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading.Channels;
 
 namespace KestrelJuniorHttpServer.Core;
 
@@ -10,6 +11,13 @@ public class HttpListener
     private readonly string _prefix;
     private CancellationTokenSource? _cts;
     private Task? _acceptLoop;
+
+    // The channel acts as a queue for incoming TcpClient connections
+    private Channel<TcpClient>? _requestChannel;
+
+    // Task for the request processing loop (the consumer)
+    private Task? _requestProcessorLoop;
+
 
     public HttpListener(string prefix)
     {
@@ -30,18 +38,54 @@ public class HttpListener
         _tcpListener.Start();
         Console.WriteLine($"Listening on {uri}");
         _cts = new CancellationTokenSource();
+
+        // Initialize and start the request queue and processor
+        _requestChannel = Channel.CreateUnbounded<TcpClient>();
+        _requestProcessorLoop = ProcessRequestsAsync(_cts.Token);
+
+
         _acceptLoop = AcceptClientsAsync(_cts.Token);
     }
 
+    // This is the PRODUCER loop. Its only job is to accept connections
+    // and quickly add them to the channel.
     private async Task AcceptClientsAsync(CancellationToken ct)
     {
-        if (_tcpListener == null) return;
-        
+        if (_tcpListener == null || _requestChannel == null) return;
+        Console.WriteLine("Connection acceptor loop started.");
+
         while (!ct.IsCancellationRequested)
         {
+            // TODO: Add try-catch with OperationCanceledException
             var client = await _tcpListener.AcceptTcpClientAsync(ct);
-            _ = HandleClientAsync(client, ct); // Handle client connection in a new Task
+            // Write the client to the channel. The consumer will pick it up.
+            await _requestChannel.Writer.WriteAsync(client, ct);
         }
+        Console.WriteLine("Connection acceptor loop stopped.");
+
+    }
+
+    // The CONSUMER loop
+    // This loop reads from the channel and dispatches the work to HandleClientAsync.
+    private async Task ProcessRequestsAsync(CancellationToken ct)
+    {
+        if (_requestChannel == null) return;
+        Console.WriteLine("Request processor loop started.");
+        // Read from the channel until it's completed and empty.
+        try
+        {
+            await foreach (var client in _requestChannel.Reader.ReadAllAsync(ct))
+            {
+                // Do not await this. We want the loop to immediately continue
+                // and be ready to pick up the next request from the channel.
+                _ = HandleClientAsync(client, ct);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when the server is stopping.
+        }
+        Console.WriteLine("Request processor loop stopped.");
     }
 
     // EDUCATIONAL-NOTE:
@@ -204,13 +248,27 @@ public class HttpListener
 
     public async Task StopAsync()
     {
-        if (_tcpListener == null || _cts == null) throw new InvalidOperationException("Not started");
+        if (_tcpListener == null || _cts == null || _requestChannel == null) throw new InvalidOperationException("Not started");
+
+        // 1. Signal cancellation to all running tasks.
         _cts.Cancel();
-        _tcpListener.Stop(); // Stop the listener first to unblock AcceptTcpClientAsync
-        if (_acceptLoop != null)
-        {
-            await _acceptLoop.ConfigureAwait(false);
-        }
+        // 2. Stop the listener to prevent new connections from being accepted.
+        _tcpListener.Stop();
+
+        // 3. Mark the channel as complete, signaling that no more items will be added.
+        // This allows the consumer loop (ProcessRequestsAsync) to finish gracefully.
+        _requestChannel.Writer.Complete();
+
+        // 4. Wait for both the acceptor and processor loops to finish their work.
+        var tasksToWait = new List<Task>();
+        if (_acceptLoop != null) tasksToWait.Add(_acceptLoop);
+        if (_requestProcessorLoop != null) tasksToWait.Add(_requestProcessorLoop);
+
+        await Task.WhenAll(tasksToWait).ConfigureAwait(false);
+
+
+
+        // 5. Clean up resources.
         _cts.Dispose();
         _tcpListener = null;
         Console.WriteLine($"Stopped listening on {_prefix}");

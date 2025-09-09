@@ -102,7 +102,7 @@ This roadmap tracks the evolution of the Http Server from a simple socket listen
     *   **Tag:** `body-reading`
 
 
--   [ ] **Request Queue (`Channel<T>`)**
+-   [x] **Request Queue (`Channel<T>`)**
     *   **Approach (The "Why"):** Decouple the I/O layer from the processing layer to prevent blocking and improve concurrency.
     *   **Limitation (The Problem it Solves):** Without a queue, each new connection must wait for the previous one to be fully processed, severely limiting concurrency. `Channel<T>` provides a high-performance, thread-safe queue to solve this.
     *   **Tag:** `request-queue`
