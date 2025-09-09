@@ -95,7 +95,7 @@ This roadmap tracks the evolution of the Http Server from a simple socket listen
     *   **Tag:** `header-parsing`
 
 
--   [ ] **Request Body Reading**
+-   [x] **Request Body Reading**
     *   **Approach (The "Why"):** Learn how to read the request payload based on the `Content-Length` header.
     *   **Limitation:** Reading the entire body into memory is highly inefficient for large file uploads and consumes significant RAM.
     *   **Future Improvement:** Explore streaming reads and `Chunked Transfer Encoding` in Phase 4 (Tag: `chunked-encoding`)

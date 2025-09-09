@@ -163,31 +163,31 @@ public class HttpListener
                         int remainingBodyBytesToRead = contentLength - bodyBytesReadWithHeaders;
 
                         // If there's more body to read than what's already in ms
-                        if (bodyBytesReadWithHeaders < contentLength)
+                        if (remainingBodyBytesToRead > 0)
                         {
-          
-                            var bodyBuffer = new byte[remainingBodyBytesToRead];
-                            int totalBodyBytesRead = bodyBytesReadWithHeaders;
+                            var remainingBodyBuffer = new byte[remainingBodyBytesToRead];
+                            int totalBodyBytesReceived = 0;
 
-                            // Read the remaining body bytes
-                            while (totalBodyBytesRead < contentLength)
+                            // read the remaining body in a new buffer
+                            while (totalBodyBytesReceived < remainingBodyBytesToRead)
                             {
-                                // calculate the position in the buffer where we should write the next bytes
-                                var currentBufferPosition = totalBodyBytesRead - bodyBytesReadWithHeaders;
-
-                                // calculate the number of bytes we should read in this pass
-                                var bytesToReadInThisPass = remainingBodyBytesToRead - currentBufferPosition;
-
-                                bytesRead = await stream.ReadAsync(bodyBuffer, currentBufferPosition, bytesToReadInThisPass, ct);
-                               
-                                if (bytesRead == 0) break; // Connection closed prematurely
-                                totalBodyBytesRead += bytesRead;
+                                bytesRead = await stream.ReadAsync(remainingBodyBuffer, totalBodyBytesReceived, remainingBodyBytesToRead - totalBodyBytesReceived, ct);
+                                if (bytesRead == 0) break; 
+                                totalBodyBytesReceived += bytesRead;
                             }
-                            // Now 'bodyBuffer' contains the full request body
-                            string requestBody = Encoding.UTF8.GetString(bodyBuffer, 0, totalBodyBytesRead - bodyBytesReadWithHeaders);
+
+                            // now we should combine both parts of the body
+                            var fullBodyBytes = new byte[contentLength];
+                            // 1. copy the part of the body that was read with the headers
+                            Buffer.BlockCopy(accumulatedBytes, headerSectionEndPosition, fullBodyBytes, 0, bodyBytesReadWithHeaders);
+                            // 2. copy the part of the body that was read separately
+                            Buffer.BlockCopy(remainingBodyBuffer, 0, fullBodyBytes, bodyBytesReadWithHeaders, totalBodyBytesReceived);
+
+                            string requestBody = Encoding.UTF8.GetString(fullBodyBytes);
                             Console.WriteLine($"Request Body:\n{requestBody}");
-                        } else if (bodyBytesReadWithHeaders >= contentLength) {
-                            // The entire body (or more) was read along with the headers
+                        } 
+                        else {
+                            // when all body bytes are read with headers
                             string requestBody = Encoding.UTF8.GetString(accumulatedBytes, headerSectionEndPosition, contentLength);
                             Console.WriteLine($"Request Body:\n{requestBody}");
                         }
