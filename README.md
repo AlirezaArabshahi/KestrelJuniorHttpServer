@@ -1,43 +1,64 @@
 # LiteWebFramework
-> What *really* happens when a web request hits your server? Let's build a full web stack from scratch and find out.
+> An educational project to build a mini ASP.NET Core and its web server (Kestrel) from scratch in modern C#.
 
 ### What is this?
-**LiteWebFramework** is a minimal, educational web ecosystem built from the ground up in modern C# (.NET). It is designed to demystify the magic behind production web stacks like ASP.NET Core by building both a web server and an application framework from scratch.
+**LiteWebFramework** is a hands-on, educational ecosystem designed to demystify the magic behind modern web stacks. Have you ever wondered how **ASP.NET Core** and its high-performance web server, **Kestrel**, work under the hood? This project answers that question by building simplified versions of both, from the ground up.
 
-This repository contains two primary projects:
-*   **`LiteWeb.Server`**: A low-level HTTP/1.1 web server responsible for handling raw TCP connections and parsing the HTTP protocol.
-*   **`LiteWeb.Framework`**: A high-level application framework that runs on top of `LiteWeb.Server`, providing features like routing and a simplified application model.
+This repository is built as a "duo" of projects, mimicking the real-world separation of concerns:
 
-### Key Features
-*   **Educational Focus:** The entire stack is designed for learning. Every step of its operation is explained through detailed comments and a structured roadmap. For example:
-    ```
-    // At this point, MemoryStream contains the raw bytes read from the network stream so far.
-    // For example, if the request was "GET / HTTP/1.1\r\nHost: localhost:8080\r\n\r\n",
-    // MemoryStream would internally hold the byte sequence corresponding to this string.
-    // In hexadecimal representation, these bytes would look like:
-    // 47 45 54 20 2F 20 48 54 54 50 2F 31 2E ...
-    ```
-*   **Step-by-Step Development:** The code is developed incrementally. Each Git tag represents a new, completed feature, allowing you to follow the evolution of the project.
-*   **Layered Architecture:** The project is explicitly structured into a server layer and a framework layer, demonstrating a clean separation of concerns, just like real-world web stacks.
+*   **`LiteWeb.Server` (Our "mini-Kestrel")**: A low-level web server built from scratch. It handles raw TCP/IP connections, parses the HTTP/1.1 protocol, and manages the request lifecycle. This is where we get our hands dirty with sockets, streams, and byte manipulation.
 
-### Found this useful? Give it a star ⭐️
-If you've found this project helpful for learning about web servers and frameworks, please consider giving it a star on GitHub! It helps others discover the repository and motivates further development.
-
-**Note:** This project is **not** a production-ready stack. It is built for learning, allowing you to see and understand the behind-the-scenes of how a web server and framework work together.
-
-### Project Structure: Understanding the Monorepo
-This repository is a **Monorepo**, meaning it contains multiple related projects in one place. This structure simplifies development and makes it easy to work on the server and framework simultaneously.
-*   `src/LiteWeb.Server/`: The web server class library.
-*   `src/LiteWeb.Framework/`: The application framework class library.
-*   `samples/WebApp/`: A sample console application that uses both the server and framework to run a simple website.
-
-To see the code at the end of each completed step, simply check out its corresponding Git tag. For example:
-    ```
-    git checkout basic-listener
-    ```
-    The `main` branch always contains the latest, most complete version of the project.
+*   **`LiteWeb.Framework` (Our "mini-ASP.NET Core")**: A high-level application framework that runs on `LiteWeb.Server`. It provides the elegant abstractions developers love, such as the `WebApp.CreateBuilder()` pattern, routing (`MapGet`), and a clean application model.
 
 ---
+
+### Project Structure
+This repository is a **Monorepo**, containing multiple related projects. This structure simplifies development and makes it easy to work on the server and framework simultaneously.
+
+```
+/
+├── LiteWeb.sln
+├── src/
+│   ├── LiteWeb.Server/      # The core web server (Class Library)
+│   └── LiteWeb.Framework/   # The application framework (Class Library)
+└── samples/
+    └── WebApp/              # Example app using the framework (Console App)
+```
+
+---
+
+### Getting Started
+
+#### Prerequisites
+- .NET SDK (Version 8.0 or newer recommended)
+
+#### How to Run
+1.  Clone this repository.
+2.  Open a terminal in the root directory.
+3.  Run the sample application:
+    ```
+    dotnet run --project samples/WebApp/WebApp.csproj
+    ```
+4.  Open your browser and navigate to `http://localhost:11231`. You should see the welcome page from the sample app!
+
+---
+
+### Project Goals
+This project is built for one primary reason: **learning**.
+
+1.  **Demystify the Server (Kestrel):** We'll dive deep into how a web server handles network traffic, manages threads, parses raw HTTP requests, and deals with resource management, all without relying on existing web server libraries.
+
+2.  **Demystify the Framework (ASP.NET Core):** We'll explore how a modern framework provides clean, high-level APIs on top of a low-level server. We'll implement the famous Builder pattern, routing engine, and other familiar concepts.
+
+3.  **Learn by Doing:** The code is heavily commented, and tags (e.g., `git checkout listener-setup`) used to see different stages of development and see how the project evolves from a simple socket listener to a more capable framework.
+
+### Give it a star ⭐️
+If this project helps you understand the internals of .NET web stacks, please consider giving it a star! It helps other developers discover the repository.
+
+### Disclaimer ‼️
+
+This is an educational project and is **not** suitable for production use. It intentionally omits many security features, performance optimizations, and edge-case handling found in real-world software for the sake of clarity and simplicity.
+
 ## Development Roadmap
 
 ### ✅ Phase 1: Core Server & Request Parsing
@@ -67,7 +88,6 @@ To see the code at the end of each completed step, simply check out its correspo
     *   **Approach (The "Why"):** Accumulate raw bytes into a `MemoryStream`, then convert the entire block to a string for parsing.
     *   **Limitation:** This is a performance anti-pattern. Calling `ms.ToArray()` creates a **full copy** of the buffer, leading to unnecessary memory allocations.
     *   **Future Improvement:** We will refactor to use `StreamReader` in **Phase 2 (Tag: `streamreader-refactor`)** and ultimately `System.IO.Pipelines` in **Phase 5 (Tag: `pipelines-integration`)** for high-performance parsing.
-    *   **Tag:** `header-parsing`
 
 -   [x] **Request Body Reading**
     *   **Approach (The "Why"):** Learn how to read the request payload based on the `Content-Length` header.
@@ -76,12 +96,16 @@ To see the code at the end of each completed step, simply check out its correspo
     *   **Tag:** `body-reading`
 
 -   [x] **Request Queue (`Channel<T>`)**
-    *   **Approach (The "Why"):** Decouple the I/O layer from the processing layer to prevent blocking and improve concurrency.
-    *   **Limitation (The Problem it Solves):** Without a queue, each new connection must wait for the previous one to be fully processed, severely limiting concurrency. `Channel<T>` provides a high-performance, thread-safe queue to solve this.
+    *   **Approach (The "Why"):** Decouple the I/O layer from the processing layer to prevent blocking and improve concurrency. Without a queue, each new connection must wait for the previous one to be fully processed, severely limiting concurrency. `Channel<T>` provides a high-performance, thread-safe queue to solve this.
     *   **Tag:** `request-queue`
 
 ### 🟡 Phase 2: Robust Parsing & Abstraction Layer
 *Goal: Replace the brittle manual parsing with a robust solution (`StreamReader`) and then build a clean abstraction layer (`HttpContext`) on top of it.*
+
+-   [x] **Restructure Project into Modular Architecture**
+    *   **Task:** Split the project into multiple projects, each with a clear responsibility (e.g., `LiteWeb.Server`, `LiteWeb.Framework`).
+    *   **Approach (The "Why"):** A modular architecture makes the codebase more maintainable, testable, and scalable. It allows us to focus on one aspect of the project at a time.
+    *   **Tag:** `modular-architecture`
 
 -   [ ] **Introduce `StreamReader` for Request Parsing**
     *   **Task:** Refactor the manual, byte-level parsing from Phase 1 to use `StreamReader` to read the request line and headers.
@@ -139,7 +163,7 @@ To see the code at the end of each completed step, simply check out its correspo
 *Goal: Make the entire stack (server and framework) more robust, secure, and performant.*
 
 -   [ ] **Architectural Refactoring: Implement a Layered Architecture**
-    *   **Task:** Restructure the entire project, drawing inspiration from Kestrel's architecture, to achieve a clear separation of concerns.
+    *   **Task:** Restructure the entire project, to achieve a clear separation of concerns.
     *   **Approach (The "Why"):** The current design, which places most logic in one or two large classes, was suitable for Phase 1 but is too brittle for future development. By refactoring into distinct layers, we improve testability, extensibility, and maintainability.
     *   **Layers:**
         - Core Layer (Core/): The public entry point for the server (LiteWebServer, LiteWebServerOptions)

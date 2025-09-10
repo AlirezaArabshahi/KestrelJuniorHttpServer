@@ -1,4 +1,4 @@
-namespace KestrelJuniorHttpServer.Core;
+namespace LiteWeb.Server.Http;
 
 public class HttpRequestParser
 {

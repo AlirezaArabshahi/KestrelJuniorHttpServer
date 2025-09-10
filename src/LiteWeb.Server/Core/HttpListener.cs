@@ -3,7 +3,8 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Channels;
 
-namespace KestrelJuniorHttpServer.Core;
+using LiteWeb.Server.Http; 
+namespace LiteWeb.Server.Core;
 
 public class HttpListener
 {
