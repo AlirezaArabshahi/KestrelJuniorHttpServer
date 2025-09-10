@@ -103,7 +103,7 @@ To see the code at the end of each completed step, simply check out its correspo
     *   **Tag:** `response-sending`
 
 ### ⏳ Phase 3: Building the `LiteWeb.Framework`
-*Goal: Create a new, separate framework project that uses `LiteWeb.Server` to handle web requests and provides high-level features like routing.*
+*Goal: Create a new, separate framework project that uses `LiteWeb.Server` to provide high-level application features.*
 
 -   [ ] **Create the Framework Project**
     *   **Task:** Add a new `LiteWeb.Framework` class library project to the solution. This project will reference `LiteWeb.Server`.
@@ -114,9 +114,26 @@ To see the code at the end of each completed step, simply check out its correspo
     *   **Approach (The "Why"):** To provide a clean, user-friendly API for developers to run their web application using your full stack.
     *   **Tag:** `webapp-builder`
 
--   [ ] **Implement Basic Routing**
-    *   **Task:** Build a simple router that inspects `HttpContext.Request.Path` and executes a user-defined function for that path.
-    *   **Tag:** `basic-routing`
+-   [ ] **Implement Simple (Manual) Routing**
+    *   **Task:** Create a basic router that allows the developer to manually map specific paths to handler functions.
+    *   **Approach (The "Why"):** This is the most fundamental form of routing. It provides an explicit, easy-to-understand way to handle requests before introducing more complex, "magic" features. Example usage: `app.MapGet("/hello", context => ...);`
+    *   **Tag:** `simple-routing`
+
+-   [ ] **(Advanced) Implement Convention-Based Routing (Controller-Action Style)**
+    *   **Task:** Build a more advanced router that uses **Reflection** to automatically discover and map routes based on controller and action method names (e.g., `/Home/Index` maps to `HomeController.Index()`).
+    *   **Approach (The "Why"):** This "convention-over-configuration" approach is a core feature of powerful frameworks like **ASP.NET Core**. It dramatically speeds up development by reducing boilerplate code.
+    *   **Tag:** `convention-routing`
+
+-   [ ] **(Advanced) Create a `BaseController` Class**
+    *   **Task:** Create a base class for controllers to inherit from, providing helper methods.
+    *   **Approach (The "Why"):** This class will provide common properties (`HttpContext`) and helper methods (`Ok()`, `NotFound()`, `Json()`) to its children, promoting code reuse and making controller logic cleaner. This is tightly coupled with the controller-based routing task.
+    *   **Tag:** `base-controller`
+
+-   [ ] **(New) Evolve to Attribute-Based Routing**
+    *   **Task:** Enhance the router to support custom `[Route]` attributes on action methods. The developer will now explicitly register controllers, and the router will use Reflection to find and map these attributed methods.
+    *   **Approach (The "Why"):** This is the most powerful and flexible routing strategy, used heavily in modern ASP.NET Core for building APIs. It gives developers ultimate control over their URL structure and demonstrates the evolution from implicit "convention" to explicit "configuration". This exactly matches the latest code from the instructor.
+    *   **Tag:** `attribute-routing`
+
 
 ### 🚀 Phase 4: Stability, Security & Performance
 *Goal: Make the entire stack (server and framework) more robust, secure, and performant.*
