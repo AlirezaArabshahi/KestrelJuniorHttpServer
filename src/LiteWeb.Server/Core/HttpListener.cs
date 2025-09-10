@@ -89,161 +89,46 @@ public class HttpListener
         Console.WriteLine("Request processor loop stopped.");
     }
 
-    // EDUCATIONAL-NOTE:
-    // This method demonstrates manual buffer handling for parsing an HTTP request.
-    // It is intentionally written for learning purposes to show the low-level details of processing raw TCP streams.
-    // The current implementation with `MemoryStream.ToArray()` inside the loop is intentionally inefficient
-    // to highlight common pitfalls in low-level network programming.
+    // This method handles each client connection.
+    // It reads the request line, headers, and body (if present) from the client stream.
     private async Task HandleClientAsync(TcpClient client, CancellationToken ct)
     {
         Console.WriteLine("Client connected!");
         using var stream = client.GetStream();
-        // Manual buffer management for reading request line and headers
-        var buffer = new byte[4096]; // A reasonable size for request line and headers
-        int bytesRead;
-        using var ms = new MemoryStream();
-        
-        // Read bytes until we find the end of the header block (\r\n\r\n)
-        // This is a simplified approach. A more robust solution would handle partial reads
-        // and potentially very large headers more efficiently.
-        while (true)
+        using var reader = new StreamReader(stream, Encoding.UTF8, leaveOpen: true, detectEncodingFromByteOrderMarks: true);
+
+        // Read the request line
+        var requestLine = await reader.ReadLineAsync();
+        if (string.IsNullOrEmpty(requestLine))
         {
-            bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, ct);
-            if (bytesRead == 0) break; // End of stream or connection closed
+            client.Close();
+            return;
+        }
 
-            ms.Write(buffer, 0, bytesRead);
+        // Parse the request line
+        var (method, path, httpVersion) = HttpRequestParser.ParseRequestLine(requestLine);
+        Console.WriteLine($"Method: {method}, Path: {path}, HTTP Version: {httpVersion}");
 
-            // At this point, 'ms' (MemoryStream) contains the raw bytes read from the network stream so far.
-            // For example, if the request was "GET / HTTP/1.1\r\nHost: localhost:8080\r\n\r\n",
-            // 'ms' would internally hold the byte sequence corresponding to this string.
-            // In hexadecimal representation, these bytes would look like:
-            // 47 45 54 20 2F 20 48 54 54 50 2F 31 2E 31 0D 0A 48 6F ...
-            // ------------------
+        var headers = await HttpRequestParser.ParseHeadersAsync(reader);
+        Console.WriteLine("Headers:");
+        foreach (var header in headers)
+        {
+            Console.WriteLine($"  {header.Key}: {header.Value}");
+        }
 
-            // Calling ms.ToArray() converts these accumulated bytes into a byte array.
-            // e.g., this will produce a byte array like [71, 69, ..., 13, 10]
-            // which is the byte representation of the request string 
-            // "GET / HTTP/1.1\r\nHost: localhost:8080\r\n\r\n"
-            var accumulatedBytes = ms.ToArray(); // Inefficient for large streams, but okay for headers
-            
-            // Check for end of headers marker (\r\n\r\n)
-            // This is a naive search. For performance, a more optimized search (e.g., KMP)
-            // or a dedicated HTTP parser library would be used.
-            if (accumulatedBytes.Length >= 4)
+        // Handle request body if Content-Length header is present
+        if (headers.TryGetValue("Content-Length", out var contentLengthString) &&
+            int.TryParse(contentLengthString, out var contentLength))
+        {
+            Console.WriteLine($"Content-Length: {contentLength}");
+
+            if (contentLength > 0)
             {
-                int headerSectionEndPosition = -1;
-                for (int i = 0; i < accumulatedBytes.Length - 3; i++)
-                {
-                    if (accumulatedBytes[i] == '\r' && accumulatedBytes[i+1] == '\n' &&
-                        accumulatedBytes[i+2] == '\r' && accumulatedBytes[i+3] == '\n')
-                    {
-                        headerSectionEndPosition = i + 4; // +4 to include \r\n\r\n
-                        break;
-                    }
-                }
-                if (headerSectionEndPosition != -1)
-                {
-                    // If end of headers is found, process headers and potentially body
-                    var headerBytes = new byte[headerSectionEndPosition];
-                    Array.Copy(accumulatedBytes, 0, headerBytes, 0, headerSectionEndPosition);
-                    
-                    // Convert the accumulated bytes to string
-                    // [71, 69, ..., 13, 10] -> "GET / HTTP/1.1\r\nHost: localhost:8080\r\n\r\n"
-                    var headersString = Encoding.UTF8.GetString(headerBytes);
-
-                    // Split the full headers string into headerLines
-                    // e.g., headerLines -> ["GET / HTTP/1.1", "Host: localhost:8080", "", ""]
-
-                    var headerLines = headersString.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
-                    // Extract Request Line
-                    // e.g., requestLine -> "GET / HTTP/1.1"
-
-                    var requestLine = headerLines.FirstOrDefault(l => !string.IsNullOrWhiteSpace(l));
-                    if (string.IsNullOrEmpty(requestLine))
-                    {
-                        client.Close();
-                        return;
-                    }
-                    // e.g., method -> "GET", path -> "/", httpVersion -> "HTTP/1.1"
-                    var (method, path, httpVersion) = HttpRequestParser.ParseRequestLine(requestLine);
-                    Console.WriteLine($"Method: {method}, Path: {path}, HTTP Version: {httpVersion}");
-                    // Extract Headers
-                    var rawHeaderLines = new List<string>();
-                    bool inHeadersSection = false;
-                    foreach (var line in headerLines)
-                    {
-                        if (line == requestLine) // Skip the request line itself
-                        {
-                            inHeadersSection = true;
-                            continue;
-                        }
-
-                        if (inHeadersSection)
-                        {
-                            if (string.IsNullOrWhiteSpace(line)) // Empty line signifies end of headers
-                            {
-                                break;
-                            }
-                            rawHeaderLines.Add(line);
-                        }
-                    }
-                    // e.g., rawHeaderLines -> ["Host: localhost:8080"]
-                    var headers = HttpRequestParser.ParseHeaders(rawHeaderLines);
-                    // e.g., headers -> { "Host": "localhost:8080" }
-                    Console.WriteLine("Headers:");
-                    foreach (var header in headers)
-                    {
-                        Console.WriteLine($"  {header.Key}: {header.Value}");
-                    }
-
-                    // Handle request body if Content-Length header is present
-                    if (headers.TryGetValue("Content-Length", out var contentLengthString) &&
-                        int.TryParse(contentLengthString, out var contentLength))
-                    {
-                        Console.WriteLine($"Content-Length: {contentLength}");
-
-                        // Calculate how much of the body has already been read with the headers unintentionally
-                        int bodyBytesReadWithHeaders = accumulatedBytes.Length - headerSectionEndPosition;
-                        
-                        int remainingBodyBytesToRead = contentLength - bodyBytesReadWithHeaders;
-
-                        // If there's more body to read than what's already in ms
-                        if (remainingBodyBytesToRead > 0)
-                        {
-                            var remainingBodyBuffer = new byte[remainingBodyBytesToRead];
-                            int totalBodyBytesReceived = 0;
-
-                            // read the remaining body in a new buffer
-                            while (totalBodyBytesReceived < remainingBodyBytesToRead)
-                            {
-                                bytesRead = await stream.ReadAsync(remainingBodyBuffer, totalBodyBytesReceived, remainingBodyBytesToRead - totalBodyBytesReceived, ct);
-                                if (bytesRead == 0) break; 
-                                totalBodyBytesReceived += bytesRead;
-                            }
-
-                            // now we should combine both parts of the body
-                            var fullBodyBytes = new byte[contentLength];
-                            // 1. copy the part of the body that was read with the headers
-                            Buffer.BlockCopy(accumulatedBytes, headerSectionEndPosition, fullBodyBytes, 0, bodyBytesReadWithHeaders);
-                            // 2. copy the part of the body that was read separately
-                            Buffer.BlockCopy(remainingBodyBuffer, 0, fullBodyBytes, bodyBytesReadWithHeaders, totalBodyBytesReceived);
-
-                            string requestBody = Encoding.UTF8.GetString(fullBodyBytes);
-                            Console.WriteLine($"Request Body:\n{requestBody}");
-                        } 
-                        else {
-                            // when all body bytes are read with headers
-                            string requestBody = Encoding.UTF8.GetString(accumulatedBytes, headerSectionEndPosition, contentLength);
-                            Console.WriteLine($"Request Body:\n{requestBody}");
-                        }
-                    }
-
-                    break; // Exit the while loop after processing headers and body
-                }
+                string requestBody = await HttpRequestParser.ParseBodyAsync(reader, contentLength);
+                Console.WriteLine($"Request Body:\n{requestBody}");
             }
         }
 
-        // For now, just close the connection
         client.Close();
     }
 
@@ -266,8 +151,6 @@ public class HttpListener
         if (_requestProcessorLoop != null) tasksToWait.Add(_requestProcessorLoop);
 
         await Task.WhenAll(tasksToWait).ConfigureAwait(false);
-
-
 
         // 5. Clean up resources.
         _cts.Dispose();

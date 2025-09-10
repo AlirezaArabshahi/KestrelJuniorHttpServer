@@ -16,7 +16,6 @@ This repository is built as a "duo" of projects, mimicking the real-world separa
 This repository is a **Monorepo**, containing multiple related projects. This structure simplifies development and makes it easy to work on the server and framework simultaneously.
 
 ```
-/
 ├── LiteWeb.sln
 ├── src/
 │   ├── LiteWeb.Server/      # The core web server (Class Library)
@@ -24,24 +23,6 @@ This repository is a **Monorepo**, containing multiple related projects. This st
 └── samples/
     └── WebApp/              # Example app using the framework (Console App)
 ```
-
----
-
-### Getting Started
-
-#### Prerequisites
-- .NET SDK (Version 8.0 or newer recommended)
-
-#### How to Run
-1.  Clone this repository.
-2.  Open a terminal in the root directory.
-3.  Run the sample application:
-    ```
-    dotnet run --project samples/WebApp/WebApp.csproj
-    ```
-4.  Open your browser and navigate to `http://localhost:11231`. You should see the welcome page from the sample app!
-
----
 
 ### Project Goals
 This project is built for one primary reason: **learning**.
@@ -52,12 +33,6 @@ This project is built for one primary reason: **learning**.
 
 3.  **Learn by Doing:** The code is heavily commented, and tags (e.g., `git checkout listener-setup`) used to see different stages of development and see how the project evolves from a simple socket listener to a more capable framework.
 
-### Give it a star ⭐️
-If this project helps you understand the internals of .NET web stacks, please consider giving it a star! It helps other developers discover the repository.
-
-### Disclaimer ‼️
-
-This is an educational project and is **not** suitable for production use. It intentionally omits many security features, performance optimizations, and edge-case handling found in real-world software for the sake of clarity and simplicity.
 
 ## Development Roadmap
 
@@ -107,8 +82,8 @@ This is an educational project and is **not** suitable for production use. It in
     *   **Approach (The "Why"):** A modular architecture makes the codebase more maintainable, testable, and scalable. It allows us to focus on one aspect of the project at a time.
     *   **Tag:** `modular-architecture`
 
--   [ ] **Introduce `StreamReader` for Request Parsing**
-    *   **Task:** Refactor the manual, byte-level parsing from Phase 1 to use `StreamReader` to read the request line and headers.
+-   [x] **Introduce `StreamReader` for Request Parsing**
+    *   **Task:** Refactor the manual, byte-level parsing from Phase 1 to use `StreamReader` to read the request line, headers and body.
     *   **Approach (The "Why"):** The manual parsing was educational but fragile. Building our abstractions on top of it would force us to rewrite code later. By refactoring to `StreamReader` *first*, we build the abstraction layer on a solid, reliable foundation, avoiding rework.
     *   **Tag:** `streamreader-refactor`
 
@@ -221,3 +196,29 @@ This is an educational project and is **not** suitable for production use. It in
     *   **Approach (The "Why"):** To achieve peak I/O performance. `Pipelines` is a sophisticated API that minimizes data copies ("zero-copy" parsing) and reduces memory allocations.
     *   **Limitation (of Previous Methods):** `StreamReader` and manual `byte[]` are not ideal for max performance due to buffer copying and GC pressure.
     *   **Tag:** `pipelines-integration`
+
+
+---
+
+### Getting Started
+
+#### Prerequisites
+- .NET SDK (Version 8.0 or newer recommended)
+
+#### How to Run
+1.  Clone this repository.
+2.  Open a terminal in the root directory.
+3.  Run the sample application:
+    ```
+    dotnet run --project samples/WebApp/WebApp.csproj
+    ```
+4.  Open your browser and navigate to `http://localhost:11231`. You should see the welcome page from the sample app!
+
+---
+
+### Give it a star ⭐️
+If this project helps you understand the internals of .NET web stacks, please consider giving it a star! It helps other developers discover the repository.
+
+### Disclaimer ‼️
+
+This is an educational project and is **not** suitable for production use. It intentionally omits many security features, performance optimizations, and edge-case handling found in real-world software for the sake of clarity and simplicity.

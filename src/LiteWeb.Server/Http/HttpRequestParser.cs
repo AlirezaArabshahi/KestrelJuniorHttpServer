@@ -12,30 +12,36 @@ public class HttpRequestParser
         return (parts[0], parts[1], parts[2]);
     }
 
-    public static Dictionary<string, string> ParseHeaders(IEnumerable<string> rawHeaderLines)
+    public static async Task<Dictionary<string, string>> ParseHeadersAsync(StreamReader reader)
     {
         var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var line in rawHeaderLines)
+        string? line;
+        while (!string.IsNullOrEmpty(line = await reader.ReadLineAsync().ConfigureAwait(false)))
         {
-            var parsedHeader = ParseHeaderLine(line);
-            if (parsedHeader.HasValue)
-            {
-                headers[parsedHeader.Value.Name] = parsedHeader.Value.Value;
-            }
+            if (string.IsNullOrWhiteSpace(line)) continue; // Skip any empty lines
+            
+            var idx = line.IndexOf(':');
+            if (idx <= 0) continue; // Skip malformed header lines
+            
+            var name = line[..idx].Trim();
+            var value = line[(idx + 1)..].Trim();
+            headers[name] = value;
         }
         return headers;
     }
 
-    private static (string Name, string Value)? ParseHeaderLine(string line)
+    public static async Task<string> ParseBodyAsync(StreamReader reader, int contentLength)
     {
-        if (string.IsNullOrWhiteSpace(line)) return null; // Skip any empty lines
-        var idx = line.IndexOf(':');
-        if (idx <= 0)
+        if (contentLength <= 0) return string.Empty;
+
+        var bodyBuffer = new char[contentLength];
+        int totalRead = 0;
+        while (totalRead < contentLength)
         {
-            return null; // Malformed header line
+            int read = await reader.ReadAsync(bodyBuffer, totalRead, contentLength - totalRead);
+            if (read == 0) break; // End of stream
+            totalRead += read;
         }
-        var name = line[..idx].Trim();
-        var value = line[(idx + 1)..].Trim();
-        return (name, value);
+        return new string(bodyBuffer, 0, totalRead);
     }
 }
