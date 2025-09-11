@@ -6,7 +6,7 @@ using System.Threading.Channels;
 using LiteWeb.Server.Http; 
 namespace LiteWeb.Server.Core;
 
-public class HttpListener
+public class LiteWebServer
 {
     private TcpListener? _tcpListener;
     private readonly string _prefix;
@@ -20,11 +20,10 @@ public class HttpListener
     private Task? _requestProcessorLoop;
 
 
-    public HttpListener(string prefix)
+    public LiteWebServer(string prefix)
     {
         _prefix = prefix;
     }
-    
     public void Start()
     {
         if (_tcpListener != null) throw new InvalidOperationException("Already started");
@@ -57,10 +56,16 @@ public class HttpListener
 
         while (!ct.IsCancellationRequested)
         {
-            // TODO: Add try-catch with OperationCanceledException
-            var client = await _tcpListener.AcceptTcpClientAsync(ct);
-            // Write the client to the channel. The consumer will pick it up.
-            await _requestChannel.Writer.WriteAsync(client, ct);
+            try
+            {
+                var client = await _tcpListener.AcceptTcpClientAsync(ct);
+                // Write the client to the channel. The consumer will pick it up.
+                await _requestChannel.Writer.WriteAsync(client, ct);
+            }
+            catch (OperationCanceledException)
+            {
+                // This exception is expected when the listener is stopped.
+            }
         }
         Console.WriteLine("Connection acceptor loop stopped.");
 
@@ -90,47 +95,46 @@ public class HttpListener
     }
 
     // This method handles each client connection.
-    // It reads the request line, headers, and body (if present) from the client stream.
+    // It now creates HttpRequest, HttpResponse, and HttpContext objects.
     private async Task HandleClientAsync(TcpClient client, CancellationToken ct)
     {
         Console.WriteLine("Client connected!");
-        using var stream = client.GetStream();
-        using var reader = new StreamReader(stream, Encoding.UTF8, leaveOpen: true, detectEncodingFromByteOrderMarks: true);
-
-        // Read the request line
-        var requestLine = await reader.ReadLineAsync();
-        if (string.IsNullOrEmpty(requestLine))
+        using (client)
+        using (var stream = client.GetStream())
+        using (var reader = new StreamReader(stream, Encoding.UTF8, leaveOpen: true, detectEncodingFromByteOrderMarks: true))
         {
-            client.Close();
-            return;
-        }
-
-        // Parse the request line
-        var (method, path, httpVersion) = HttpRequestParser.ParseRequestLine(requestLine);
-        Console.WriteLine($"Method: {method}, Path: {path}, HTTP Version: {httpVersion}");
-
-        var headers = await HttpRequestParser.ParseHeadersAsync(reader);
-        Console.WriteLine("Headers:");
-        foreach (var header in headers)
-        {
-            Console.WriteLine($"  {header.Key}: {header.Value}");
-        }
-
-        // Handle request body if Content-Length header is present
-        if (headers.TryGetValue("Content-Length", out var contentLengthString) &&
-            int.TryParse(contentLengthString, out var contentLength))
-        {
-            Console.WriteLine($"Content-Length: {contentLength}");
-
-            if (contentLength > 0)
+            // Read the request line
+            var requestLine = await reader.ReadLineAsync();
+            if (string.IsNullOrEmpty(requestLine))
             {
-                string requestBody = await HttpRequestParser.ParseBodyAsync(reader, contentLength);
-                Console.WriteLine($"Request Body:\n{requestBody}");
+                return; // Invalid request, close connection.
             }
-        }
 
-        client.Close();
+            var (method, path, httpVersion) = HttpParser.ParseRequestLine(requestLine);
+
+            var headers = await HttpParser.ParseHeadersAsync(reader);
+            
+            string? requestBody = null;
+            // Handle request body if Content-Length header is present
+            if (headers.TryGetValue("Content-Length", out var contentLengthString) &&
+                int.TryParse(contentLengthString, out var contentLength) && contentLength > 0)
+            {
+                requestBody = await HttpParser.ParseBodyAsync(reader, contentLength);
+            }
+            
+            // *** Create Core HTTP Abstractions ***
+            var request = new HttpRequest(method, path, httpVersion, headers, requestBody);
+            var response = new HttpResponse(stream);
+            var context = new HttpContext(request, response);
+
+            // Now that we have the context, we can process it.
+            // In a real framework, you would pass this 'context' object to a request pipeline,
+            // middleware, or a router to generate a meaningful response.
+            
+            // TODO: pass the context to the framework
+        }
     }
+
 
     public async Task StopAsync()
     {
@@ -150,7 +154,17 @@ public class HttpListener
         if (_acceptLoop != null) tasksToWait.Add(_acceptLoop);
         if (_requestProcessorLoop != null) tasksToWait.Add(_requestProcessorLoop);
 
-        await Task.WhenAll(tasksToWait).ConfigureAwait(false);
+
+        try
+        {
+            await Task.WhenAll(tasksToWait).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            // Log or handle exceptions that might occur during shutdown, but don't rethrow.
+            Console.WriteLine($"An exception occurred during shutdown: {ex.Message}");
+        }
+
 
         // 5. Clean up resources.
         _cts.Dispose();

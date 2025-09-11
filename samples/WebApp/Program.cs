@@ -1,6 +1,6 @@
 ﻿using LiteWeb.Server.Core;
 
-var server = new HttpListener("http://localhost:11231");
+var server = new LiteWebServer("http://localhost:11231");
 
 server.Start();
 

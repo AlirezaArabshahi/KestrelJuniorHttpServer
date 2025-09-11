@@ -85,21 +85,46 @@ This project is built for one primary reason: **learning**.
 -   [x] **Introduce `StreamReader` for Request Parsing**
     *   **Task:** Refactor the manual, byte-level parsing from Phase 1 to use `StreamReader` to read the request line, headers and body.
     *   **Approach (The "Why"):** The manual parsing was educational but fragile. Building our abstractions on top of it would force us to rewrite code later. By refactoring to `StreamReader` *first*, we build the abstraction layer on a solid, reliable foundation, avoiding rework.
+    *   **Limitation:** This implementation simplifies request body handling by treating it as a string. This is sufficient for text-based content like JSON or form data but does not support binary data such as file uploads. This limitation will be addressed in a future refactoring task.
     *   **Tag:** `streamreader-refactor`
 
--   [ ] **Create Core HTTP Abstractions**
+-   [x] **HTTP Abstractions**
     *   **Task:** Create `HttpRequest`, `HttpResponse`, and `HttpContext` classes.
     *   **Approach (The "Why"):** Now that we have robust parsing, we can channel that data into clean, strongly-typed objects. This is the foundation for building any framework logic.
     *   **Tag:** `http-abstractions`
 
+-   [ ] Refactor Request Body to Support Binary Data
+    *   **Task:** Modify the HttpRequest class to store the request body as ReadOnlyMemory<byte> instead of string.
+    *   **Approach (The "Why"):** Storing the body as raw bytes makes the server more versatile. It enables handling of non-textual data like file uploads and ensures correct processing of different character encodings, resolving the limitation of the initial StreamReader implementation.
+    *   **Tag:** refactor-binary-request
+
+
+-   [ ] Refactor Response Handling with a Buffered Stream
+    *   **Task:** Enhance the HttpResponse class to use an internal MemoryStream as a buffer for the response body.
+    *   **Approach (The "Why"):** Buffering the response allows developers to build the response body incrementally using multiple Write calls. This provides greater flexibility than a single-string body and makes it easier to implement helper methods, such as WriteJson, which can directly serialize objects to the buffer.
+    *   **Tag:** refactor-buffered-response
+
+-  [ ] **Server-Framework Communication Model: Approach 1 (The "Pull" Model - Rejected)**
+    *   **Task:** Establish a clean boundary for how the `LiteWeb.Server` passes a ready-to-process `HttpContext` to the `LiteWeb.Framework`.
+    *   ***Approach (The "Why"):** The server could expose a method like `server.GetNextContextAsync()`. The framework would then need to implement a `while` loop to continuously "pull" contexts from the server. This model was rejected as it creates tighter coupling and forces the framework to manage the processing loop.
+    *   **Limitation:** This model forces the framework (and by extension, the end-user) to manage the complexity of the request processing loop. It tightly couples the framework to the server's internal queueing mechanism and is generally less intuitive for building applications. This approach was observed in earlier reference code.
+    *   **Tag:** `server-framework-pull-model`
+
+-  [ ] **Server-Framework Communication Model: Approach 2 (The "Push" Model - Chosen)**
+    *   **Task:** Establish a clean boundary for how the `LiteWeb.Server` passes a ready-to-process `HttpContext` to the `LiteWeb.Framework`.
+    *   ***Approach (The "Why"):** The server retains full ownership of its processing loop. When a context is ready, it actively "pushes" it to the framework by invoking a pre-registered handler. This creates a cleaner separation of concerns and a simpler API, aligning with modern frameworks like ASP.NET Core.
+    *   **Tag:** `server-framework-push-model`
+
 -   [ ] **Implement a `RequestHandler` Delegate Hook**
-    *   **Task:** Add a public `Action<HttpContext>` delegate to the `HttpListener` class.
-    *   **Approach (The "Why"):** This is the critical "hook" that decouples the server from the framework. The server's only job is to create the `HttpContext` and pass it to this handler for processing.
+    *   **Task:** Implement the chosen "Push Model" by adding a public `Action<HttpContext>` delegate to the `LiteWebServer` class.
+    *   **Approach (The "Why"):** This delegate is the critical "hook" that physically implements the Push Model. It allows the server to pass control to the framework without having any knowledge of the framework's internal logic, thus achieving true decoupling.
     *   **Tag:** `request-handler-delegate`
 
 -   [ ] **Implement Response Sending**
     *   **Task:** Create logic within the `HttpResponse` class to serialize its state (status code, headers, body) into a valid HTTP response and write it back to the client's stream.
+    *   **Approach (The "Why"):** Without the ability to send a response, the `RequestHandler` hook is incomplete. This task completes the request-response lifecycle, making the server functional.
     *   **Tag:** `response-sending`
+
 
 ### ⏳ Phase 3: Building the `LiteWeb.Framework`
 *Goal: Create a new, separate framework project that uses `LiteWeb.Server` to provide high-level application features.*
