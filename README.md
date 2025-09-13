@@ -93,6 +93,11 @@ This project is built for one primary reason: **learning**.
     *   **Approach (The "Why"):** Now that we have robust parsing, we can channel that data into clean, strongly-typed objects. This is the foundation for building any framework logic.
     *   **Tag:** `http-abstractions`
 
+-   [x] **Implement Response Sending**
+    *   **Task:** Create logic within the HttpResponse class to serialize its state (status code, headers, body) into a valid HTTP response and write it back to the client's stream.
+    *   **Approach (The "Why"):** A web server is not functional until it can send a response back to the client. This task implements the most fundamental part of the server: completing the request-response lifecycle. By creating a method to serialize and send a basic response, we make the server functional and testable for the first time.
+    *   **Tag:** `response-sending`
+
 -   [ ] Refactor Request Body to Support Binary Data
     *   **Task:** Modify the HttpRequest class to store the request body as ReadOnlyMemory<byte> instead of string.
     *   **Approach (The "Why"):** Storing the body as raw bytes makes the server more versatile. It enables handling of non-textual data like file uploads and ensures correct processing of different character encodings, resolving the limitation of the initial StreamReader implementation.
@@ -120,10 +125,6 @@ This project is built for one primary reason: **learning**.
     *   **Approach (The "Why"):** This delegate is the critical "hook" that physically implements the Push Model. It allows the server to pass control to the framework without having any knowledge of the framework's internal logic, thus achieving true decoupling.
     *   **Tag:** `request-handler-delegate`
 
--   [ ] **Implement Response Sending**
-    *   **Task:** Create logic within the `HttpResponse` class to serialize its state (status code, headers, body) into a valid HTTP response and write it back to the client's stream.
-    *   **Approach (The "Why"):** Without the ability to send a response, the `RequestHandler` hook is incomplete. This task completes the request-response lifecycle, making the server functional.
-    *   **Tag:** `response-sending`
 
 
 ### ⏳ Phase 3: Building the `LiteWeb.Framework`

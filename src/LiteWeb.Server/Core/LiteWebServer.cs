@@ -132,6 +132,11 @@ public class LiteWebServer
             // middleware, or a router to generate a meaningful response.
             
             // TODO: pass the context to the framework
+            // For this example, we'll just send a simple hardcoded response.
+            Console.WriteLine("Processing request and sending a sample response...");
+            var responseHtml = $"<html><body><h1>Hello from LiteWeb Server!</h1><p>You requested: {context.Request.Path}</p></body></html>";
+            await context.Response.SendAsync(responseHtml, 200, "OK");
+            Console.WriteLine("Response sent. Closing client connection.");
         }
     }
 
