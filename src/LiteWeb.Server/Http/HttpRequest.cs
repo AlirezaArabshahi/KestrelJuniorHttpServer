@@ -7,9 +7,9 @@ public class HttpRequest
     public string Path { get; }
     public string HttpVersion { get; }
     public IReadOnlyDictionary<string, string> Headers { get; }
-    public string? Body { get; }
+    public ReadOnlyMemory<byte>? Body { get; }
 
-    public HttpRequest(string method, string path, string httpVersion, IReadOnlyDictionary<string, string> headers, string? body)
+    public HttpRequest(string method, string path, string httpVersion, IReadOnlyDictionary<string, string> headers, ReadOnlyMemory<byte>? body)
     {
         Method = method;
         Path = path;

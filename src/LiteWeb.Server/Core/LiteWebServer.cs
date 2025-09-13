@@ -3,7 +3,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Channels;
 
-using LiteWeb.Server.Http; 
+// using LiteWeb.Server.Http; 
 namespace LiteWeb.Server.Core;
 
 public class LiteWebServer
@@ -94,51 +94,37 @@ public class LiteWebServer
         Console.WriteLine("Request processor loop stopped.");
     }
 
-    // This method handles each client connection.
-    // It now creates HttpRequest, HttpResponse, and HttpContext objects.
+   
     private async Task HandleClientAsync(TcpClient client, CancellationToken ct)
     {
         Console.WriteLine("Client connected!");
         using (client)
-        using (var stream = client.GetStream())
-        using (var reader = new StreamReader(stream, Encoding.UTF8, leaveOpen: true, detectEncodingFromByteOrderMarks: true))
+        using (var stream = client.GetStream()) // we only keep the stream
         {
-            // Read the request line
-            var requestLine = await reader.ReadLineAsync();
-            if (string.IsNullOrEmpty(requestLine))
+            var request = await HttpParser.ParseRequestAsync(stream, ct);
+            if (request == null)
             {
-                return; // Invalid request, close connection.
+                // if request is null, close the connection
+                return;
             }
 
-            var (method, path, httpVersion) = HttpParser.ParseRequestLine(requestLine);
-
-            var headers = await HttpParser.ParseHeadersAsync(reader);
-            
-            string? requestBody = null;
-            // Handle request body if Content-Length header is present
-            if (headers.TryGetValue("Content-Length", out var contentLengthString) &&
-                int.TryParse(contentLengthString, out var contentLength) && contentLength > 0)
-            {
-                requestBody = await HttpParser.ParseBodyAsync(reader, contentLength);
-            }
-            
-            // *** Create Core HTTP Abstractions ***
-            var request = new HttpRequest(method, path, httpVersion, headers, requestBody);
             var response = new HttpResponse(stream);
             var context = new HttpContext(request, response);
 
+            // TODO: pass the context to the framework
             // Now that we have the context, we can process it.
             // In a real framework, you would pass this 'context' object to a request pipeline,
             // middleware, or a router to generate a meaningful response.
-            
-            // TODO: pass the context to the framework
             // For this example, we'll just send a simple hardcoded response.
-            Console.WriteLine("Processing request and sending a sample response...");
-            var responseHtml = $"<html><body><h1>Hello from LiteWeb Server!</h1><p>You requested: {context.Request.Path}</p></body></html>";
-            await context.Response.SendAsync(responseHtml, 200, "OK");
-            Console.WriteLine("Response sent. Closing client connection.");
+            context.Response.StatusCode = 200;
+            context.Response.Headers["Content-Type"] = "text/html; charset=utf-8";
+            var responseMessage = $"<h1>Request for {context.Request.Path} Processed!</h1><p>True binary support is now active.</p>";
+            context.Response.Body = Encoding.UTF8.GetBytes(responseMessage);
+            
+            await response.SendAsync(ct);
         }
     }
+
 
 
     public async Task StopAsync()

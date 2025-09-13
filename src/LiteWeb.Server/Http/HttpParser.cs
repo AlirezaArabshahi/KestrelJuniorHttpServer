@@ -1,63 +1,76 @@
-namespace LiteWeb.Server.Http;
+using System.Net.Sockets;
+using System.Text;
 
-public class HttpParser
+public static class HttpParser
 {
-    public static (string Method, string Path, string HttpVersion) ParseRequestLine(string requestLine)
+    public static async Task<HttpRequest?> ParseRequestAsync(NetworkStream stream, CancellationToken ct)
     {
-        var parts = requestLine.Split(' ');
-        if (parts.Length != 3)
-        {
-            throw new ArgumentException("Invalid request line format.");
-        }
-        return (parts[0], parts[1], parts[2]);
-    }
+        // 1. Read and parse the request line
+        var requestLineString = await ReadLineAsync(stream, ct);
+        if (string.IsNullOrEmpty(requestLineString)) return null;
+        
+        var requestLineParts = requestLineString.Split(' ', 3);
+        if (requestLineParts.Length != 3) return null;
 
-    public static async Task<Dictionary<string, string>> ParseHeadersAsync(StreamReader reader)
-    {
+        var method = requestLineParts[0];
+        var path = requestLineParts[1];
+        var httpVersion = requestLineParts[2];
+
+        // 2. Read and parse the headers
         var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        string? line;
-        while (!string.IsNullOrEmpty(line = await reader.ReadLineAsync().ConfigureAwait(false)))
+        string? headerLine;
+        while (!string.IsNullOrEmpty(headerLine = await ReadLineAsync(stream, ct)))
         {
-            if (string.IsNullOrWhiteSpace(line)) continue; // Skip any empty lines
-            
-            var idx = line.IndexOf(':');
-            if (idx <= 0) continue; // Skip malformed header lines
-            
-            var name = line[..idx].Trim();
-            var value = line[(idx + 1)..].Trim();
-            headers[name] = value;
+            var headerParts = headerLine.Split(':', 2);
+            if (headerParts.Length == 2)
+            {
+                headers[headerParts[0].Trim()] = headerParts[1].Trim();
+            }
         }
-        return headers;
 
-        // alternative way
-        // while (!string.IsNullOrEmpty(line = await reader.ReadLineAsync()))
-        // {
-        //     var parts = line.Split(':', 2);
-        //     if (parts.Length == 2)
-        //     {
-        //         headers[parts[0].Trim()] = parts[1].Trim();
-        //     }
-        // }
-        // return headers;
+        // 3. Read the request body as raw bytes
+        ReadOnlyMemory<byte>? body = null;
+        if (headers.TryGetValue("Content-Length", out var contentLengthString) &&
+            int.TryParse(contentLengthString, out var contentLength) && contentLength > 0)
+        {
+            // we read the body as raw bytes
+            var bodyBuffer = new byte[contentLength];
+            int totalBytesRead = 0;
+            while (totalBytesRead < contentLength)
+            {
+                int bytesRead = await stream.ReadAsync(bodyBuffer, totalBytesRead, contentLength - totalBytesRead, ct);
+                if (bytesRead == 0) break; // connection closed
+                totalBytesRead += bytesRead;
+            }
+            body = new ReadOnlyMemory<byte>(bodyBuffer);
+        }
+        return new HttpRequest(method, path, httpVersion, headers, body);
     }
-
-    public static async Task<string> ParseBodyAsync(StreamReader reader, int contentLength)
+    // Read a line from the stream
+    private static async Task<string> ReadLineAsync(NetworkStream stream, CancellationToken ct)
     {
-        if (contentLength <= 0) return string.Empty;
-
-        var bodyBuffer = new char[contentLength];
-        int totalRead = 0;
-        while (totalRead < contentLength)
+        using var memoryStream = new MemoryStream();
+        while (true)
         {
-            int read = await reader.ReadAsync(bodyBuffer, totalRead, contentLength - totalRead);
-            if (read == 0) break; // End of stream
-            totalRead += read;
-        }
-        return new string(bodyBuffer, 0, totalRead);
+            int readByte = stream.ReadByte();
+            if (readByte == -1 || ct.IsCancellationRequested) 
+            {
+                // end of stream or request canceled
+                break;
+            }
 
-        // alternative way
-        // var buffer = new char[contentLength];
-        // await reader.ReadBlockAsync(buffer, 0, contentLength);
-        // return new string(buffer);
+            if (readByte == '\n') 
+            {
+                // we found the end of the line
+                break;
+            }
+
+            if (readByte != '\r')
+            {
+                memoryStream.WriteByte((byte)readByte);
+            }
+        }
+        // we use UTF8 encoding because HTTP protocol lines must be UTF8
+        return Encoding.UTF8.GetString(memoryStream.ToArray());
     }
 }

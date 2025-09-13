@@ -98,7 +98,7 @@ This project is built for one primary reason: **learning**.
     *   **Approach (The "Why"):** A web server is not functional until it can send a response back to the client. This task implements the most fundamental part of the server: completing the request-response lifecycle. By creating a method to serialize and send a basic response, we make the server functional and testable for the first time.
     *   **Tag:** `response-sending`
 
--   [ ] Refactor Request Body to Support Binary Data
+-   [x] Refactor Request Body to Support Binary Data
     *   **Task:** Modify the HttpRequest class to store the request body as ReadOnlyMemory<byte> instead of string.
     *   **Approach (The "Why"):** Storing the body as raw bytes makes the server more versatile. It enables handling of non-textual data like file uploads and ensures correct processing of different character encodings, resolving the limitation of the initial StreamReader implementation.
     *   **Tag:** refactor-binary-request

@@ -1,5 +1,4 @@
-﻿using LiteWeb.Server.Core;
-
+using LiteWeb.Server.Core;
 var server = new LiteWebServer("http://localhost:11231");
 
 server.Start();

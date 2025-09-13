@@ -1,5 +1,6 @@
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 
 /// <summary>
 /// Represents an outgoing HTTP response. It provides methods to build and send a response back to the client.
@@ -10,37 +11,43 @@ public class HttpResponse
     public int StatusCode { get; set; } = 200;
     public string StatusMessage { get; set; } = "OK";
     public Dictionary<string, string> Headers { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public ReadOnlyMemory<byte>? Body { get; set; }
+
     public HttpResponse(NetworkStream stream)
     {
         _stream = stream;
     }
     
-    /// <summary>
-    /// Sends the complete HTTP response to the client.
-    /// </summary>
-    public async Task SendAsync(string body, int statusCode, string statusMessage, string contentType = "text/html; charset=utf-8")
+    public async Task SendAsync(CancellationToken ct = default)
     {
-        StatusCode = statusCode;
-        StatusMessage = statusMessage;
-        
-        var bodyBytes = Encoding.UTF8.GetBytes(body);
+        // Status line
+        var statusLine = Encoding.UTF8.GetBytes($"HTTP/1.1 {StatusCode} {StatusMessage}\r\n");
+        await _stream.WriteAsync(statusLine, ct);
 
-        Headers["Content-Type"] = contentType;
-        Headers["Content-Length"] = bodyBytes.Length.ToString();
-        Headers["Connection"] = "close"; // We will close the connection after the response
+        // Headers
+        if (Body.HasValue && !Headers.ContainsKey("Content-Length"))
+        {
+            Headers["Content-Length"] = Body.Value.Length.ToString();
+        }
 
-        var responseBuilder = new StringBuilder();
-        responseBuilder.Append($"HTTP/1.1 {StatusCode} {StatusMessage}\r\n");
+        Headers["Connection"] = "close";
+
+
         foreach (var header in Headers)
         {
-            responseBuilder.Append($"{header.Key}: {header.Value}\r\n");
+            var headerBytes = Encoding.UTF8.GetBytes($"{header.Key}: {header.Value}\r\n");
+            await _stream.WriteAsync(headerBytes, ct);
         }
-        responseBuilder.Append("\r\n"); // End of headers
 
-        var headerBytes = Encoding.UTF8.GetBytes(responseBuilder.ToString());
+        // End of headers
+        await _stream.WriteAsync(Encoding.UTF8.GetBytes("\r\n"), ct);
 
-        await _stream.WriteAsync(headerBytes);
-        await _stream.WriteAsync(bodyBytes);
-        await _stream.FlushAsync();
+        // Body
+        if (Body.HasValue)
+        {
+            await _stream.WriteAsync(Body.Value, ct);
+        }
+        await _stream.FlushAsync(ct);
+
     }
 }
