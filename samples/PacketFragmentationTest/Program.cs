@@ -1,7 +1,7 @@
 ﻿using System.Net.Sockets;
 using System.Text;
 
-// This test simulates network fragmentation - a common edge case where data is split 
+// This test simulates packetfragmentation - a common edge case where data is split 
 // across multiple TCP packets during transmission.
 var tcpClient = new TcpClient();
 await tcpClient.ConnectAsync("localhost", 11231); // Connect to your server
