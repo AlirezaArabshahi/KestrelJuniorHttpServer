@@ -104,7 +104,7 @@ This project is built for one primary reason: **learning**.
     *   **Tag:** refactor-binary-request
 
 
--   [ ] Refactor Response Handling with a Buffered Stream
+-   [x] Refactor Response Handling with a Buffered Stream
     *   **Task:** Enhance the HttpResponse class to use an internal MemoryStream as a buffer for the response body.
     *   **Approach (The "Why"):** Buffering the response allows developers to build the response body incrementally using multiple Write calls. This provides greater flexibility than a single-string body and makes it easier to implement helper methods, such as WriteJson, which can directly serialize objects to the buffer.
     *   **Tag:** refactor-buffered-response

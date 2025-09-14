@@ -118,8 +118,9 @@ public class LiteWebServer
             // For this example, we'll just send a simple hardcoded response.
             context.Response.StatusCode = 200;
             context.Response.Headers["Content-Type"] = "text/html; charset=utf-8";
-            var responseMessage = $"<h1>Request for {context.Request.Path} Processed!</h1><p>True binary support is now active.</p>";
-            context.Response.Body = Encoding.UTF8.GetBytes(responseMessage);
+            // Instead of assigning to the Body property, we use the Write method.
+            context.Response.Write("<h1>Response built with a buffer!</h1>"); 
+            context.Response.Write($"<p>Path: {context.Request.Path}</p>");
             
             await response.SendAsync(ct);
         }
