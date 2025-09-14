@@ -42,7 +42,9 @@ public static class HttpParser
                 if (bytesRead == 0) break; // connection closed
                 totalBytesRead += bytesRead;
             }
-            body = new ReadOnlyMemory<byte>(bodyBuffer);
+            // body = new ReadOnlyMemory<byte>(bodyBuffer);
+            body = new ReadOnlyMemory<byte>(bodyBuffer, 0, totalBytesRead); 
+
         }
         return new HttpRequest(method, path, httpVersion, headers, body);
     }
@@ -70,7 +72,7 @@ public static class HttpParser
                 memoryStream.WriteByte((byte)readByte);
             }
         }
-        // we use UTF8 encoding because HTTP protocol lines must be UTF8
-        return Encoding.UTF8.GetString(memoryStream.ToArray());
+        // we use ASCII encoding because HTTP protocol lines must be ASCII
+        return Encoding.ASCII.GetString(memoryStream.ToArray());
     }
 }
